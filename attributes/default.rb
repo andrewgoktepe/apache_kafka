@@ -54,6 +54,11 @@ default["apache_kafka"]["conf"]["server"] = {
   }
 }
 
+default["apache_kafka"]["conf"]["producer"] = {
+  "file" => "producer.properties",
+  "metadata.broker.list" => "localhost:9092"
+}
+
 default["apache_kafka"]["conf"]["log4j"] = {
   "file" => "log4j.properties",
   "entries" => {
