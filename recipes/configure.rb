@@ -3,6 +3,8 @@
 # Recipe:: configure
 #
 
+version_tag = "kafka_#{node["apache_kafka"]["scala_version"]}-#{node["apache_kafka"]["version"]}"
+
 [
   node["apache_kafka"]["config_dir"],
   node["apache_kafka"]["bin_dir"],
@@ -49,6 +51,9 @@ template ::File.join(node["apache_kafka"]["config_dir"],
   )
   notifies :restart, "service[kafka]", :delayed
 end
+link ::File.join(node["apache_kafka"]["install_dir"], version_tag, "config", "server.properties") do
+  to ::File.join(node["apache_kafka"]["config_dir"], node["apache_kafka"]["conf"]["server"]["file"])
+end
 
 template ::File.join(node["apache_kafka"]["config_dir"],
                      node["apache_kafka"]["conf"]["log4j"]["file"]) do
@@ -62,3 +67,19 @@ template ::File.join(node["apache_kafka"]["config_dir"],
   )
   notifies :restart, "service[kafka]", :delayed
 end
+
+template ::File.join(node["apache_kafka"]["config_dir"],
+                     node["apache_kafka"]["conf"]["producer"]["file"]) do
+  source "properties/producer.properties.erb"
+  owner "kafka"
+  action :create
+  mode "0644"
+  variables(
+    :metadata_broker_list => node["apache_kafka"]["conf"]["producer"]["metadata.broker.list"]
+  )
+  notifies :restart, "service[kafka]", :delayed
+end
+link ::File.join(node["apache_kafka"]["install_dir"], version_tag, "config", "producer.properties") do
+  to ::File.join(node["apache_kafka"]["config_dir"], node["apache_kafka"]["conf"]["producer"]["file"])
+end
+
