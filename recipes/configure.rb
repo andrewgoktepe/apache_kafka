@@ -9,7 +9,7 @@ version_tag = "kafka_#{node["apache_kafka"]["scala_version"]}-#{node["apache_kaf
   node["apache_kafka"]["config_dir"],
   node["apache_kafka"]["bin_dir"],
   node["apache_kafka"]["data_dir"],
-  node["apache_kafka"]["log_dir"],
+  node["apache_kafka"]["log_dir"]
 ].each do |dir|
   directory dir do
     recursive true
@@ -47,6 +47,7 @@ template ::File.join(node["apache_kafka"]["config_dir"],
     :broker_id => broker_id,
     :port => node["apache_kafka"]["port"],
     :zookeeper_connect => zookeeper_connect,
+    :log_dirs => node["apache_kafka"]["data_dir"],
     :entries => node["apache_kafka"]["conf"]["server"]["entries"]
   )
   notifies :restart, "service[kafka]", :delayed

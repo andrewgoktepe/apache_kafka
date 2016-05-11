@@ -18,13 +18,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-version_tag = "kafka_#{node["apache_kafka"]["scala_version"]}-#{node["apache_kafka"]["version"]}"
+version_tag = "kafka_#{node['apache_kafka']['scala_version']}-#{node['apache_kafka']['version']}"
+
+template "/etc/default/kafka" do
+  source "kafka_env.erb"
+  owner "kafka"
+  action :create
+  mode "0644"
+  variables(
+    :kafka_home => ::File.join(node["apache_kafka"]["install_dir"], version_tag),
+    :kafka_config => node["apache_kafka"]["config_dir"],
+    :kafka_bin => node["apache_kafka"]["bin_dir"],
+    :kafka_user => node["apache_kafka"]["user"],
+    :scala_version => node["apache_kafka"]["scala_version"],
+    :kafka_heap_opts => node["apache_kafka"]["kafka_heap_opts"],
+    :kafka_jvm_performance_opts => node["apache_kafka"]["kafka_jvm_performance_opts"],
+    :kafka_opts => node["apache_kafka"]["kafka_opts"],
+    :jmx_port => node["apache_kafka"]["jmx"]["port"],
+    :jmx_opts => node["apache_kafka"]["jmx"]["opts"]
+  )
+  notifies :restart, "service[kafka]", :delayed
+end
 
 case node["apache_kafka"]["service_style"]
 when "upstart"
-  template "/etc/default/kafka" do
-    source "kafka_env.erb"
-    owner "kafka"
+  template "/etc/init/kafka.conf" do
+    source "kafka.init.erb"
+    owner "root"
+    group "root"
     action :create
     mode "0644"
     variables(
@@ -38,21 +59,35 @@ when "upstart"
       :kafka_jmx_opts => node["apache_kafka"]["kafka_jmx_opts"],
       :kafka_opts => node["apache_kafka"]["kafka_opts"],
       :kafka_jvm_performance_opts => node["apache_kafka"]["kafka_jvm_performance_opts"]
+      :kafka_umask => sprintf("%#03o", node["apache_kafka"]["umask"])
     )
-    notifies :restart, "service[kafka]", :delayed
-  end
-  template "/etc/init/kafka.conf" do
-    source "kafka.init.erb"
-    owner "root"
-    group "root"
-    action :create
-    mode "0644"
     notifies :restart, "service[kafka]", :delayed
   end
   service "kafka" do
     provider Chef::Provider::Service::Upstart
     supports :status => true, :restart => true, :reload => true
     action [:start, :enable]
+  end
+when "init.d"
+  template "/etc/init.d/kafka" do
+    source "kafka.initd.erb"
+    owner "root"
+    group "root"
+    action :create
+    mode "0744"
+    notifies :restart, "service[kafka]", :delayed
+  end
+  service "kafka" do
+    provider Chef::Provider::Service::Init
+    supports :status => true, :restart => true, :reload => true
+    action [:start]
+  end
+when "runit"
+  include_recipe "runit"
+
+  runit_service "kafka" do
+    default_logger true
+    action [:enable, :start]
   end
 else
   Chef::Log.error("You specified an invalid service style for Kafka, but I am continuing.")

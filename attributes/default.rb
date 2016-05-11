@@ -7,12 +7,18 @@ default["apache_kafka"]["version"] = "0.8.2.1"
 default["apache_kafka"]["scala_version"] = "2.11"
 default["apache_kafka"]["mirror"] = "http://apache.mirrors.tds.net/kafka"
 # shasum -a 256 /tmp/kitchen/cache/kafka_2.11-0.8.2.1.tgz
-default["apache_kafka"]["checksum"] = "9fb84546149b477bdbf167da8ca880a2c1199aeb24b2d5cd17aac0973ba4e54b"
+default["apache_kafka"]["checksum"]["0.8.2.1"] = "9fb84546149b477bdbf167da8ca880a2c1199aeb24b2d5cd17aac0973ba4e54b"
 
 default["apache_kafka"]["user"] = "kafka"
+default["apache_kafka"]["setup_user"] = true
 
 # heap options are set low to allow for local development
 default["apache_kafka"]["kafka_heap_opts"] = "-Xmx512M -Xms256M"
+default["apache_kafka"]["kafka_jvm_performance_opts"] = "-server -XX:+UseCompressedOops -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled -XX:+CMSScavengeBeforeRemark -XX:+DisableExplicitGC -Djava.awt.headless=true"
+default["apache_kafka"]["kafka_opts"] = ""
+
+default["apache_kafka"]["jmx"]["port"] = ""
+default["apache_kafka"]["jmx"]["opts"] = "-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
 
 default["apache_kafka"]["kafka_jmx_opts"] = "-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false  -Dcom.sun.management.jmxremote.ssl=false"
 default["apache_kafka"]["kafka_opts"] = ""
@@ -27,6 +33,8 @@ default["apache_kafka"]["bin_dir"] = "/usr/local/kafka/bin"
 default["apache_kafka"]["config_dir"] = "/usr/local/kafka/config"
 
 default["apache_kafka"]["service_style"] = "upstart"
+# Currently only for upstart, the umask for the kafka server process
+default["apache_kafka"]["umask"] = 007
 
 # Kafka configuration settings are detailed here.
 # https://kafka.apache.org/08/configuration.html
@@ -49,7 +57,6 @@ default["apache_kafka"]["conf"]["server"] = {
     # "default.replication.factor" => 2,
     #
     # For a full list reference kafka's config documentation
-    "log.dirs" => node["apache_kafka"]["data_dir"],
     "delete.topic.enable" => "true"
   }
 }
@@ -62,13 +69,14 @@ default["apache_kafka"]["conf"]["producer"] = {
 default["apache_kafka"]["conf"]["log4j"] = {
   "file" => "log4j.properties",
   "entries" => {
+    "log4j.additivity.kafka" => "false",
     "log4j.additivity.kafka.controller" => "false",
     "log4j.additivity.kafka.log.LogCleaner" => "false",
     "log4j.additivity.kafka.network.RequestChannel$" => "false",
     "log4j.additivity.kafka.request.logger" => "false",
     "log4j.additivity.state.change.logger" => "false",
     "log4j.appender.cleanerAppender.DatePattern" => "'.'yyyy-MM-dd-HH",
-    "log4j.appender.cleanerAppender.File" => "log-cleaner.log",
+    "log4j.appender.cleanerAppender.File" => "${kafka.logs.dir}/log-cleaner.log",
     "log4j.appender.cleanerAppender.layout.ConversionPattern" => "[%d] %p %m (%c)%n",
     "log4j.appender.cleanerAppender.layout" => "org.apache.log4j.PatternLayout",
     "log4j.appender.cleanerAppender" => "org.apache.log4j.DailyRollingFileAppender",
