@@ -58,7 +58,7 @@ when "upstart"
       :kafka_heap_opts => node["apache_kafka"]["kafka_heap_opts"],
       :kafka_jmx_opts => node["apache_kafka"]["kafka_jmx_opts"],
       :kafka_opts => node["apache_kafka"]["kafka_opts"],
-      :kafka_jvm_performance_opts => node["apache_kafka"]["kafka_jvm_performance_opts"]
+      :kafka_jvm_performance_opts => node["apache_kafka"]["kafka_jvm_performance_opts"],
       :kafka_umask => sprintf("%#03o", node["apache_kafka"]["umask"])
     )
     notifies :restart, "service[kafka]", :delayed
